@@ -3,6 +3,6 @@
     "clientTimeout": 10000,
     "batchDelay": 0,
     "concurrency": 25,
-    "url": "http://192.168.84.123:3000/algorithm"
+    "url": "http://192.168.84.123:3000/hermetrics"
   }
   
