@@ -1,0 +1,40 @@
+Vagrant.configure("2") do |config|
+  use_nfs = ENV.has_key?('SRV_NFS') ? Integer(ENV['SRV_NFS']) : 1
+  actimeo = ENV.has_key?('SRV_ACTIMEO') ? Integer(ENV['SRV_ACTIMEO']) : 1
+
+  cpu_cap = ENV.has_key?('SRV_CPU_CAP') ? ENV['SRV_CPU_CAP'] : 100
+  cpu_num = ENV.has_key?('SRV_CPU_NUM') ? ENV['SRV_CPU_NUM'] : 2
+  mem_lim = ENV.has_key?('SRV_MEM_LIM') ? ENV['SRV_MEM_LIM'] : 2048
+
+  config.vm.box = "ubuntu/focal64"
+  config.vm.box_version = "20210125.0.1"
+  config.vm.provider "virtualbox" do |v|
+    v.customize ["modifyvm", :id, "--cpuexecutioncap", cpu_cap]
+    v.customize ["setextradata", :id, "VBoxInternal2/SharedFoldersEnableSymlinksCreate/vagrant", "1"]
+  end
+  config.vm.hostname = "server.localhost"
+  config.vm.network "private_network", ip: "192.168.84.123"
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  if use_nfs != 0
+    config.vm.synced_folder "../../", "/var/nfs", :mount_options => [
+      "actimeo=#{actimeo}"
+    ], type: "nfs"
+    config.bindfs.bind_folder "/var/nfs", "/vagrant"
+  else
+    config.vm.synced_folder "../../", "/vagrant", :mount_options => [
+      "dmode=777","fmode=777"
+    ], type: "virtualbox"
+  end
+
+  config.vm.provider "virtualbox" do |v|
+    v.memory = mem_lim
+    v.cpus = cpu_num
+  end
+
+  config.vm.provision :shell, inline: "apt update && apt install -qy ansible"
+  config.vm.provision "ansible_local" do |ansible|
+    ansible.playbook = "/vagrant/vm/server/provision/playbook.yml"
+    ansible.install_mode = "default"
+  end
+end

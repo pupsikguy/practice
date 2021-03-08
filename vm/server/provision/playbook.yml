@@ -1,0 +1,39 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Full system upgrade
+      become: yes
+      apt:
+        update_cache: yes
+        upgrade: yes
+    - name: Install CLI apps and libraries
+      apt:
+        name:
+          - build-essential
+          - software-properties-common
+          - git
+          - make
+          - htop
+          - iotop
+          - rsync
+          - atop
+        state: latest
+    - name: Install nodejs
+      apt:
+        name:
+          - nodejs
+          - node-gyp
+          - npm
+        state: latest
+    - name: Atop configuration
+      template:
+        src: ./config-templates/atop.j2
+        dest: /etc/default/atop
+        owner: root
+        group: root
+        mode: '0644'
+    - name: Restart service Atop, in all cases
+      service:
+        name: atop
+        state: restarted
